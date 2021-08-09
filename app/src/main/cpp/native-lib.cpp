@@ -1,8 +1,12 @@
 #include <jni.h>
 #include <string>
 
-extern "C" JNIEXPORT jstring JNICALL
-Java_com_example_jniffmpegstaticplay_MainActivity_stringFromJNI(
+/*extern{
+#include <libavcodec/avcodec.h>
+}*/
+
+
+extern "C" jstring Java_com_example_jniffmpegstaticplay_MainActivity_stringFromJNI(
         JNIEnv* env,
         jobject /* this */) {
     std::string hello = "Hello from C++";
