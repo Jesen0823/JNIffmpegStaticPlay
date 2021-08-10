@@ -3,18 +3,21 @@ package com.example.jniffmpegstaticplay;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.os.Bundle;
+import android.os.Environment;
+import android.util.Log;
+import android.view.View;
 import android.widget.TextView;
 
 import com.example.jniffmpegstaticplay.databinding.ActivityMainBinding;
 
+import java.io.File;
+
 public class MainActivity extends AppCompatActivity {
 
-    // Used to load the 'jniffmpegstaticplay' library on application startup.
-    static {
-        System.loadLibrary("jniffmpegstaticplay");
-    }
+    public static String httpUrl = "https://gitee.com/null_694_3232/ffmpeg-play-kot/raw/master/video_resource/Android_12_new_design_1080p.mp4";
 
     private ActivityMainBinding binding;
+    public StaticPlayer staticPlayer;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -23,14 +26,20 @@ public class MainActivity extends AppCompatActivity {
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        // Example of a call to a native method
-        TextView tv = binding.sampleText;
-        tv.setText(stringFromJNI());
+        staticPlayer = new StaticPlayer();
+        staticPlayer.setSurfaceView(binding.surfaceView);
+
+        binding.btnPlay.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View view) {
+
+                File file = new File(Environment.getExternalStorageDirectory(),"input.mp4");
+                Log.d("XXXX",file.getAbsolutePath());
+                //staticPlayer.start(file.getAbsolutePath());
+                staticPlayer.start(httpUrl);
+            }
+        });
     }
 
-    /**
-     * A native method that is implemented by the 'jniffmpegstaticplay' native library,
-     * which is packaged with this application.
-     */
     public native String stringFromJNI();
 }
