@@ -50,6 +50,8 @@ Java_com_example_jniffmpegstaticplay_StaticPlayer_native_1start(JNIEnv *env, job
     // 第3个参数如果是0，会自动将2,3个参数key-value添加到第一个参数
     av_dict_set(&opts, "timeout", "3000000", 0);
     int ret = avformat_open_input(&formatContext, path, NULL, &opts);
+    __android_log_print(ANDROID_LOG_DEBUG,"avformat_open_input","ret:%d",ret);
+
     if (ret) {
         return;
     }
@@ -61,6 +63,7 @@ Java_com_example_jniffmpegstaticplay_StaticPlayer_native_1start(JNIEnv *env, job
             break;
         }
     }
+    __android_log_print(ANDROID_LOG_DEBUG,"video_stream_index",":%d",video_stream_index);
 
     // 获取视频流解码参数
     AVCodecParameters *codecpar = formatContext->streams[video_stream_index]->codecpar;
