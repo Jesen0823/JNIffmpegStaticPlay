@@ -44,6 +44,16 @@ public class MainActivity extends AppCompatActivity {
                 //staticPlayer.start(httpUrl);
             }
         });
+
+        binding.btnAudio.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                AudioPlayer audioPlayer = new AudioPlayer();
+                String input = new File(Environment.getExternalStorageDirectory(),"jiarihaitan.mp3").getAbsolutePath();
+                String output = new File(Environment.getExternalStorageDirectory(),"jiarihaitan.pcm").getAbsolutePath();
+                audioPlayer.soundPlay(input,output);
+            }
+        });
     }
 
     public native String stringFromJNI();
