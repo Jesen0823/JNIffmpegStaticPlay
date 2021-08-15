@@ -14,6 +14,7 @@ extern "C" {
 #include "libswresample/swresample.h"
 }
 #include "player_control.h"
+#include "call_java_helper.h"
 
 
 /**
@@ -31,15 +32,26 @@ extern "C" {
 
 #define MAX_AUDIO_FRAME_SIZE 48000 * 4
 
+CallJavaHelper *callJavaHelper;
 ANativeWindow *window;
 PlayerControl *playerControl;
+
+// 重点：获取到JavaVM
+JavaVM *javaVM = NULL;
+JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved){
+    javaVM = vm;
+    return JNI_VERSION_1_4;
+}
+
 
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_example_jniffmpegstaticplay_JNIffPlayer_native_1prepare(JNIEnv *env, jobject thiz,
                                                                  jstring path_) {
     const char *path = env->GetStringUTFChars(path_,0);
-    playerControl = new PlayerControl(path);
+    callJavaHelper = new CallJavaHelper(javaVM, env, thiz);
+
+    playerControl = new PlayerControl(callJavaHelper, path);
     playerControl->prepare();
 
     env->ReleaseStringUTFChars(path_,path);

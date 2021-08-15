@@ -7,25 +7,28 @@
 
 #include <pthread.h>
 #include <android/native_window_jni.h>
+#include "call_java_helper.h"
 
-extern "C"{
+extern "C" {
 #include <libavformat/avformat.h>
 #include <libavutil/time.h>
 };
- class PlayerControl {
- public:
-     PlayerControl(const char *path);
 
-     void prepare();
+class PlayerControl {
+public:
+    PlayerControl(CallJavaHelper *callJavaHelper, const char *path);
 
-     void prepareControl();
+    void prepare();
 
-     ~PlayerControl();
+    void prepareControl();
+
+    ~PlayerControl();
 
 private:
- pthread_t pid_prepare; // 准备线程
- AVFormatContext * formatContext;
- char *url;
+    pthread_t pid_prepare; // 准备线程
+    AVFormatContext *formatContext;
+    char *url;
+    CallJavaHelper *callJavaHelper;
 };
 
 #endif //JNIFFMPEGSTATICPLAY_PLAYER_CONTROL_H

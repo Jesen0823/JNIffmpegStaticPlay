@@ -23,7 +23,10 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -L${my_lib_path}")
 
 target_link_libraries( # Specifies the target library.
         jniffmpegstaticplay
-        avfilter avformat avcodec avutil swresample swscale
+        #avfilter avformat avcodec avutil swresample swscale
+        -Wl,--start-group
+        avcodec avfilter avformat avutil swresample swscale
+        -Wl,--end-group
         ${log-lib}
         z
         OpenSLES

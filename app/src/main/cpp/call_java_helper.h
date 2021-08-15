@@ -3,6 +3,7 @@
 // c调用java的反射工具类
 
 #include <jni.h>
+#include "macro.h"
 
 #ifndef JNIFFMPEGSTATICPLAY_CALL_JAVA_HELPER_H
 #define JNIFFMPEGSTATICPLAY_CALL_JAVA_HELPER_H
