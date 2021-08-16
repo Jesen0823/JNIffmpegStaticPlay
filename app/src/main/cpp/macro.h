@@ -17,6 +17,7 @@
 
 //定义日志打印宏函数
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, "NEFFMPEG",__VA_ARGS__)
+#define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, "NEFFMPEG",__VA_ARGS__)
 
 //标记线程模式
 #define  THREAD_MAIN 1

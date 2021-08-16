@@ -27,8 +27,6 @@ extern "C" {
  * ANativeWindow自带buffer,即底层是通过缓冲区来绘制的，缓冲区大小跟ANativeWindow一样大
  * 缓冲区拿到每一行首地址，把每一行RGB数据拷贝到缓冲区
  * */
-#define LOGI(FORMAT,...) __android_log_print(ANDROID_LOG_INFO,"ffmpegPlay",FORMAT,##__VA_ARGS__);
-#define LOGE(FORMAT,...) __android_log_print(ANDROID_LOG_ERROR,"ffmpegPlay",FORMAT,##__VA_ARGS__);
 
 #define MAX_AUDIO_FRAME_SIZE 48000 * 4
 

@@ -7,7 +7,7 @@
 #include "player_control.h"
 
 AudioChannel::AudioChannel(int id, CallJavaHelper *callJavaHelper,
-                           AVCodecContext *codecContext):BaseChannel(id, avCodecContext, callJavaHelper) {
+                           AVCodecContext *codecContext):BaseChannel(id,callJavaHelper,avCodecContext) {
 
 }
 

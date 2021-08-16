@@ -10,9 +10,8 @@ extern "C" {
 #include <libavutil/frame.h>
 #include <libavutil/time.h>
 };
-#include "safe_queue.h"
 #include "call_java_helper.h"
-#include "player_control.h"
+#include "safe_queue.h"
 
 class BaseChannel{
 public:
@@ -20,13 +19,17 @@ public:
     SafeQueue<AVPacket *> pkt_queue; // packet队列
     SafeQueue<AVFrame *> frame_queue; // Frame队列
     volatile int channelId;
-    volatile bool isPlaying;
+    volatile bool isPlaying = 0;
     AVCodecContext *avCodecContext;
     CallJavaHelper *callJavaHelper;
 
-    BaseChannel(volatile int channelId, AVCodecContext *avCodecContext,
-                CallJavaHelper *callJavaHelper);
+    BaseChannel( int id, CallJavaHelper *callJavaHelper,AVCodecContext *avCodecContext)
+                :channelId(id),
+                callJavaHelper(callJavaHelper),
+                 avCodecContext(avCodecContext)
+                {
 
+    }
 
     virtual ~BaseChannel(){
         if (avCodecContext){
@@ -43,6 +46,19 @@ public:
     virtual void play() = 0;
     virtual void stop() = 0;
 
+    static void releaseAVPacket(AVPacket *&packet){
+        if (packet){
+            av_packet_free(&packet);
+            packet = 0;
+        }
+    }
+
+    static void releaseAVFrame(AVFrame *&frame){
+        if (frame){
+            av_frame_free(&frame);
+            frame = 0;
+        }
+    }
 };
 
 #endif //JNIFFMPEGSTATICPLAY_BASE_CHANNEL_H

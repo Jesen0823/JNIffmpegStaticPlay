@@ -1,13 +1,14 @@
 //
 // Created by X1 Carbon on 2021/8/15.
 //
+extern "C" {
+#include <libavutil/rational.h>
+}
 
+#include "audio_channel.h"
+#include "video_channel.h"
 #include "player_control.h"
 #include "macro.h"
-
-#define LOGI(FORMAT, ...) __android_log_print(ANDROID_LOG_INFO,"ffmpegPlay",FORMAT,##__VA_ARGS__);
-#define LOGE(FORMAT, ...) __android_log_print(ANDROID_LOG_ERROR,"ffmpegPlay",FORMAT,##__VA_ARGS__);
-
 
 void *runPrepare(void *args) {
     PlayerControl *playerControl = static_cast<PlayerControl *> (args);
@@ -47,7 +48,7 @@ void PlayerControl::prepareControl() {
     // ret为0 表示成功
     int ret = avformat_open_input(&formatContext, url, NULL, &opts);
     if (ret != 0) {
-        LOGE("prepareControl", " open failed.");
+        LOGE("prepareControl open failed.");
         if (callJavaHelper) {
             callJavaHelper->onError(THREAD_CHILD, FFMPEG_CAN_NOT_OPEN_URL);
         }
@@ -64,7 +65,7 @@ void PlayerControl::prepareControl() {
         return;
     }
     for (int index = 0; index < formatContext->nb_streams; ++index) {
-        AVStream  *stream = formatContext->streams[index];
+        AVStream *stream = formatContext->streams[index];
         AVCodecParameters *codecpar = stream->codecpar;
         // 获取解码器
         AVCodec *dec = avcodec_find_decoder(codecpar->codec_id);
@@ -107,10 +108,10 @@ void PlayerControl::prepareControl() {
         if (codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
             AVRational frame_rate = stream->avg_frame_rate;
             //  int fps = fram_rate.num / fram_rate.den;
-            int fps = av_q2d(frame_rate);
-            videoChannel = new VideoChannel(index, callJavaHelper,codecContext);
+            //int fps = av_q2d(frame_rate);
+            videoChannel = new VideoChannel(index,callJavaHelper, codecContext);
         } else if (codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
-            audioChannel = new AudioChannel(index, callJavaHelper, codecContext);
+            audioChannel = new AudioChannel(index, callJavaHelper,codecContext);
         }
     }
 
@@ -129,12 +130,66 @@ void PlayerControl::prepareControl() {
     }
 }
 
+void *start_dec_play_thread(void *args) {
+    PlayerControl *playerControl = static_cast<PlayerControl *>(args);
+    playerControl->play();
+    return 0;
+}
+
 void PlayerControl::start() {
     isPlaying = true;
-    if (audioChannel){
+    if (audioChannel) {
         audioChannel->play();
     }
-    if (videoChannel){
+    if (videoChannel) {
         videoChannel->play();
     }
+    pthread_create(&pid_dec_play, NULL, start_dec_play_thread, this);
+}
+
+// 真正的解码视频
+void PlayerControl::play() {
+    int ret = 0;
+    while (isPlaying) {
+        // 防止队列阻塞
+        if (audioChannel && audioChannel->pkt_queue.size() > 100) {
+            // 生产速度大于消费，休眠10ms
+            av_usleep(1000 * 10);
+            continue;
+        }
+        if (videoChannel && videoChannel->pkt_queue.size() > 100) {
+            // 生产速度大于消费，休眠10ms
+            av_usleep(1000 * 10);
+            continue;
+        }
+
+        // 读取数据包
+        AVPacket *packet = av_packet_alloc();
+        ret = av_read_frame(formatContext, packet);
+        if (ret == 0) {
+            // 将数据包加入队列
+            if (audioChannel && packet->stream_index == audioChannel->channelId) {
+                audioChannel->pkt_queue.push(packet);
+            } else if (videoChannel && packet->stream_index == videoChannel->channelId) {
+                videoChannel->pkt_queue.push(packet);
+            }
+        } else if (ret == AVERROR_EOF) {
+            //表示读完了，但不一定播放完毕
+            //要考虑读完了，是否播完了的情况
+            if (videoChannel->pkt_queue.empty() && videoChannel->frame_queue.empty()) {
+                LOGD("play completed.");
+                break;
+            }
+        } else {
+            LOGE("read frame of packet failed.");
+            if (callJavaHelper) {
+                callJavaHelper->onError(THREAD_CHILD, FFMPEG_READ_PACKETS_FAIL);
+            }
+            break;
+        }
+    }
+
+    isPlaying = 0;
+    audioChannel->stop();
+    videoChannel->stop();
 }

@@ -27,10 +27,12 @@ public:
     ~PlayerControl();
 
     void start();
+    void play();
 
 private:
     int isPlaying;
     pthread_t pid_prepare; // 准备线程
+    pthread_t pid_dec_play; // 解码线程运行到播放结束
     AVFormatContext *formatContext;
     char *url;
     CallJavaHelper *callJavaHelper;

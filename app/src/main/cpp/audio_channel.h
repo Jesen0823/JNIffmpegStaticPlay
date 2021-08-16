@@ -6,6 +6,7 @@
 #define JNIFFMPEGSTATICPLAY_AUDIO_CHANNEL_H
 
 #include "base_channel.h"
+#include "safe_queue.h"
 
 class AudioChannel: public BaseChannel{
 public:
