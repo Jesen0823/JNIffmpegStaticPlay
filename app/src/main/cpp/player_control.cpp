@@ -63,8 +63,9 @@ void PlayerControl::prepareControl() {
         }
         return;
     }
-    for (int i = 0; i < formatContext->nb_streams; ++i) {
-        AVCodecParameters *codecpar = formatContext->streams[i]->codecpar;
+    for (int index = 0; index < formatContext->nb_streams; ++index) {
+        AVStream  *stream = formatContext->streams[index];
+        AVCodecParameters *codecpar = stream->codecpar;
         // 获取解码器
         AVCodec *dec = avcodec_find_decoder(codecpar->codec_id);
         if (!dec) {
@@ -104,9 +105,26 @@ void PlayerControl::prepareControl() {
 
         // 处理音频视频流
         if (codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
-
+            AVRational frame_rate = stream->avg_frame_rate;
+            //  int fps = fram_rate.num / fram_rate.den;
+            int fps = av_q2d(frame_rate);
+            videoChannel = new VideoChannel(index, callJavaHelper,codecContext);
         } else if (codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
-
+            audioChannel = new AudioChannel(index, callJavaHelper, codecContext);
         }
+    }
+
+    //既没有音频也没有视频
+    if (!audioChannel && !videoChannel) {
+        LOGE("not find audio && video.");
+        if (callJavaHelper) {
+            callJavaHelper->onError(THREAD_CHILD, FFMPEG_NOMEDIA);
+        }
+        return;
+    }
+    //准备好了，反射通知java
+    if (callJavaHelper) {
+        LOGE("parpare and init success.");
+        callJavaHelper->onParpare(THREAD_CHILD);
     }
 }

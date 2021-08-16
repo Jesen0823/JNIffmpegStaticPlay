@@ -8,6 +8,8 @@
 #include <pthread.h>
 #include <android/native_window_jni.h>
 #include "call_java_helper.h"
+#include "audio_channel.h"
+#include "video_channel.h"
 
 extern "C" {
 #include <libavformat/avformat.h>
@@ -29,6 +31,9 @@ private:
     AVFormatContext *formatContext;
     char *url;
     CallJavaHelper *callJavaHelper;
+
+    AudioChannel *audioChannel;
+    VideoChannel *videoChannel;
 };
 
 #endif //JNIFFMPEGSTATICPLAY_PLAYER_CONTROL_H
