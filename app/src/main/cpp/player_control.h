@@ -26,7 +26,10 @@ public:
 
     ~PlayerControl();
 
+    void start();
+
 private:
+    int isPlaying;
     pthread_t pid_prepare; // 准备线程
     AVFormatContext *formatContext;
     char *url;

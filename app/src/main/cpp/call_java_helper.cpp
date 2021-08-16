@@ -28,6 +28,7 @@ CallJavaHelper::~CallJavaHelper() {
 
 }
 
+// 调用java层： JNIffPlayer.onPrepare()
 void CallJavaHelper::onParpare(int thread) {
 
 }

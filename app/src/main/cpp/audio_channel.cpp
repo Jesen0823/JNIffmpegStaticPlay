@@ -6,11 +6,19 @@
 #include "call_java_helper.h"
 #include "player_control.h"
 
-AudioChannel::AudioChannel(int index, CallJavaHelper *callJavaHelper,
-                           AVCodecContext *codecContext) {
+AudioChannel::AudioChannel(int id, CallJavaHelper *callJavaHelper,
+                           AVCodecContext *codecContext):BaseChannel(id, avCodecContext, callJavaHelper) {
 
 }
 
 AudioChannel::~AudioChannel() {
+
+}
+
+void AudioChannel::play() {
+
+}
+
+void AudioChannel::stop() {
 
 }

@@ -5,14 +5,17 @@
 #ifndef JNIFFMPEGSTATICPLAY_AUDIO_CHANNEL_H
 #define JNIFFMPEGSTATICPLAY_AUDIO_CHANNEL_H
 
-class AudioChannel{
+#include "base_channel.h"
+
+class AudioChannel: public BaseChannel{
 public:
 
     AudioChannel(int index, CallJavaHelper * callJavaHelper, AVCodecContext * codecContext);
 
     ~AudioChannel();
-private:
 
+    virtual void play();
+    virtual void stop();
 };
 
 #endif //JNIFFMPEGSTATICPLAY_AUDIO_CHANNEL_H

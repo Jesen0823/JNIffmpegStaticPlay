@@ -59,7 +59,12 @@ Java_com_example_jniffmpegstaticplay_JNIffPlayer_native_1prepare(JNIEnv *env, jo
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_example_jniffmpegstaticplay_JNIffPlayer_native_1start(JNIEnv *env, jobject thiz) {
-    // TODO: implement native_start()
+    // 开始进入播放状态
+    if(playerControl){
+        // 开始解码
+        playerControl->start();
+    }
+
 }
 extern "C"
 JNIEXPORT void JNICALL
