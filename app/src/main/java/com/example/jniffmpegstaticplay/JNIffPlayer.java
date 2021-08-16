@@ -1,6 +1,5 @@
 package com.example.jniffmpegstaticplay;
 
-import android.util.Log;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -51,22 +50,22 @@ public class JNIffPlayer implements SurfaceHolder.Callback {
     }
 
     // 播放器准备的监听回调
-    public void onPrepare(){
-        if (null != prepareListener){
+    public void onPrepareFromJNI() {
+        if (null != prepareListener) {
             prepareListener.onPrepare();
         }
     }
 
     // 播放进度的监听回调
-    public void onProgress(int progress){
-        if (null != progressListener){
+    public void onProgressFromJNI(int progress) {
+        if (null != progressListener) {
             progressListener.onProgress(progress);
         }
     }
 
     // 播放错误监听回调
-    public void onError(int errorCode){
-        if (null != errorListener){
+    public void onErrorFromJNI(int errorCode) {
+        if (null != errorListener) {
             errorListener.onError(errorCode);
         }
     }

@@ -1,12 +1,7 @@
 //
 // Created by X1 Carbon on 2021/8/15.
 //
-extern "C" {
-#include <libavutil/rational.h>
-}
 
-#include "audio_channel.h"
-#include "video_channel.h"
 #include "player_control.h"
 #include "macro.h"
 

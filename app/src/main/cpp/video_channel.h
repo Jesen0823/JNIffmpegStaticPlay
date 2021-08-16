@@ -6,9 +6,7 @@
 #define JNIFFMPEGSTATICPLAY_VIDEO_CHANNEL_H
 
 #include "base_channel.h"
-#include "audio_channel.h"
 #include "call_java_helper.h"
-#include <pthread.h>
 #include <android/native_window.h>
 extern "C" {
 #include <libswscale/swscale.h>

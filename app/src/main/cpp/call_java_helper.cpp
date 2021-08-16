@@ -18,9 +18,9 @@ CallJavaHelper::CallJavaHelper(JavaVM *_javaVM, JNIEnv *_env, jobject &_jobj)
 
     jclass jclazz = env->GetObjectClass(jobj);
     // 得到方法引用 ArtMethod
-    jmethod_id_prepare = env->GetMethodID(jclazz,"onPrepare","()");
-    jmethod_id_progress = env->GetMethodID(jclazz,"onProgress","(I)V");
-    jmethod_id_error = env->GetMethodID(jclazz,"onError","(I)V");
+    jmethod_id_prepare = env->GetMethodID(jclazz, "onPrepareFromJNI", "()V");
+    jmethod_id_progress = env->GetMethodID(jclazz, "onProgressFromJNI", "(I)V");
+    jmethod_id_error = env->GetMethodID(jclazz, "onErrorFromJNI", "(I)V");
 
 }
 
@@ -30,11 +30,37 @@ CallJavaHelper::~CallJavaHelper() {
 
 // 调用java层： JNIffPlayer.onPrepare()
 void CallJavaHelper::onParpare(int thread) {
-
+    if (thread == THREAD_CHILD) {
+        // 子线程的话需要绑定JavaVM
+        JNIEnv *jniEnv;
+        // 如果已经绑定
+        if (javaVm->AttachCurrentThread(&jniEnv, 0) != JNI_OK) {
+            return;
+        }
+        jniEnv->CallVoidMethod(jobj, jmethod_id_prepare);
+        // 调用完解绑javaJVM
+        javaVm->DetachCurrentThread();
+    } else {
+        // 主线程
+        env->CallVoidMethod(jobj, jmethod_id_prepare);
+    }
 }
 
 void CallJavaHelper::onProgress(int thread, int progress) {
-
+    if (thread == THREAD_CHILD) {
+        // 子线程的话需要绑定JavaVM
+        JNIEnv *jniEnv;
+        // 如果已经绑定
+        if (javaVm->AttachCurrentThread(&jniEnv, 0) != JNI_OK) {
+            return;
+        }
+        jniEnv->CallVoidMethod(jobj, jmethod_id_progress, progress);
+        // 调用完解绑javaJVM
+        javaVm->DetachCurrentThread();
+    } else {
+        // 主线程
+        env->CallVoidMethod(jobj, jmethod_id_progress, progress);
+    }
 }
 
 void CallJavaHelper::onError(int thread, int code) {

@@ -1,14 +1,13 @@
 package com.example.jniffmpegstaticplay;
 
-import androidx.appcompat.app.AppCompatActivity;
-
 import android.Manifest;
 import android.os.Bundle;
 import android.os.Environment;
-import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.SeekBar;
+
+import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.jniffmpegstaticplay.databinding.ActivityMainBinding;
 import com.example.jniffmpegstaticplay.utils.AppUtil;
@@ -51,7 +50,7 @@ public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBar
 
                 OLog.d("MainActivity, path:"+file.getAbsolutePath());
                 jniffPlayer.setDataSource(file.getAbsolutePath());
-                //staticPlayer.start(httpUrl);
+                jniffPlayer.prepare();
             }
         });
 
