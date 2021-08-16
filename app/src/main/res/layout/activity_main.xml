@@ -22,15 +22,26 @@
         android:layout_height="wrap_content"/>
 
     <Button
+        android:layout_marginTop="10dp"
         android:id="@+id/btnPlay"
         android:layout_width="match_parent"
         android:layout_height="50dp"
         android:gravity="center"
-        android:text="打开视频流" />
+        android:text="本地视频流" />
+
     <Button
+        android:layout_marginTop="10dp"
         android:id="@+id/btnAudio"
         android:layout_width="match_parent"
         android:layout_height="50dp"
         android:gravity="center"
         android:text="打开音频转换pcm并播放" />
+
+    <Button
+        android:id="@+id/netPlay"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:layout_marginTop="10dp"
+        android:gravity="center"
+        android:text="网络视频流" />
 </LinearLayout>

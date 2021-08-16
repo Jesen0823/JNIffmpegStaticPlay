@@ -17,7 +17,7 @@ import java.io.File;
 
 public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBarChangeListener {
 
-    public static String httpUrl = "https://gitee.com/null_694_3232/ffmpeg-play-kot/raw/master/video_resource/Android_12_new_design_1080p.mp4";
+    public static String httpUrl = "http://vjs.zencdn.net/v/oceans.mp4";
 
     private ActivityMainBinding binding;
     public JNIffPlayer jniffPlayer;
@@ -58,10 +58,15 @@ public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBar
             @Override
             public void onClick(View view) {
                 AudioPlayer audioPlayer = new AudioPlayer();
-                String input = new File(Environment.getExternalStorageDirectory(),"jiarihaitan.mp3").getAbsolutePath();
-                String output = new File(Environment.getExternalStorageDirectory(),"jiarihaitan.pcm").getAbsolutePath();
-                audioPlayer.soundPlay(input,output);
+                String input = new File(Environment.getExternalStorageDirectory(), "jiarihaitan.mp3").getAbsolutePath();
+                String output = new File(Environment.getExternalStorageDirectory(), "jiarihaitan.pcm").getAbsolutePath();
+                audioPlayer.soundPlay(input, output);
             }
+        });
+
+        binding.netPlay.setOnClickListener(view -> {
+            jniffPlayer.setDataSource(httpUrl);
+            jniffPlayer.prepare();
         });
     }
 
