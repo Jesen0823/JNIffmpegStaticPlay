@@ -70,7 +70,7 @@ public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBar
         jniffPlayer.setOnProgressListener(new JNIffPlayer.OnProgressListener() {
             @Override
             public void onProgress(int progress) {
-
+                OLog.d("MainActivity, onProgress:"+ progress);
             }
         });
 

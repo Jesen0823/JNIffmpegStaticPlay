@@ -29,6 +29,8 @@ public:
     void start();
     void play();
 
+    void setRenderFrameCallback(RenderFrameCallback renderCallback);
+
 private:
     int isPlaying;
     pthread_t pid_prepare; // 准备线程
@@ -37,8 +39,9 @@ private:
     char *url;
     CallJavaHelper *callJavaHelper;
 
-    AudioChannel *audioChannel;
-    VideoChannel *videoChannel;
+    AudioChannel *audioChannel = 0;
+    VideoChannel *videoChannel = 0;
+    RenderFrameCallback frameCallback;
 };
 
 #endif //JNIFFMPEGSTATICPLAY_PLAYER_CONTROL_H

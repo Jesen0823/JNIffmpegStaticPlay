@@ -9,7 +9,11 @@
 #include "audio_channel.h"
 #include "call_java_helper.h"
 #include <pthread.h>
-#include <android//native_window.h>
+#include <android/native_window.h>
+extern "C" {
+#include <libswscale/swscale.h>
+#include <libavutil/imgutils.h>
+};
 
 /** 用来传递解码并转换后的ARGB
  * int 像素个数
@@ -32,6 +36,8 @@ public:
     void decodePacket();
 
     void setRenderFrameCallback(RenderFrameCallback renderCallback);
+
+    void syn_frame_play();
 
 private:
     pthread_t pid_video_decode;

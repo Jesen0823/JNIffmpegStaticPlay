@@ -1,7 +1,6 @@
 //
 // Created by X1 Carbon on 2021/8/16.
 //
-
 #include "video_channel.h"
 #include "macro.h"
 #include "call_java_helper.h"
@@ -14,7 +13,7 @@ extern "C" {
 }
 
 VideoChannel::VideoChannel(int id, CallJavaHelper *callJavaHelper, AVCodecContext *codecContext)
-        : BaseChannel(id, callJavaHelper, avCodecContext) {
+        : BaseChannel(id, callJavaHelper, codecContext) {
 
 }
 
@@ -57,8 +56,8 @@ void VideoChannel::decodePacket() {
         if (!ret) {
             continue;
         }
-        ret = avcodec_send_packet(avCodecContext, packet);
-        releaseAVPacket(packet);
+        ret = avcodec_send_packet(codecContext, packet);
+        releaseAVPacket(&packet);
         if (ret == AVERROR(EAGAIN)) {
             continue;
         } else if (ret < 0) {
@@ -67,19 +66,19 @@ void VideoChannel::decodePacket() {
 
 
         AVFrame *frame = av_frame_alloc();
-        ret = avcodec_receive_frame(avCodecContext, frame);
+        ret = avcodec_receive_frame(codecContext, frame);
         // packet是压缩数据，需要解压
-        frame_queue.put(frame);
+        frame_queue.push(frame);
         while (frame_queue.size() > 100 && isPlaying) {
             av_usleep(1000 * 10);
             continue;
         }
     }
-    releaseAVPacket(packet); // 防止有未释放packet
+    releaseAVPacket(&packet); // 防止有未释放packet
 }
 
-void VideoChannel::setRenderFrameCallback(RenderFrameCallback renderCallback) {
-    this->renderCallback = renderCallback;
+void VideoChannel::setRenderFrameCallback(RenderFrameCallback callback) {
+    this->renderCallback = callback;
 }
 
 
@@ -97,9 +96,6 @@ void VideoChannel::syn_frame_play() {
     // 给dst_data dst_linesize 申请内存
     av_image_alloc(dst_data, dst_linesize,
                    codecContext->width, codecContext->height, AV_PIX_FMT_RGBA, 1);
-
-    //根据fps（传入的流的平均帧率来控制每一帧的延时时间）
-    double delay_time_per_frame = 1.0 / fps;
 
     AVFrame *frame = 0;
     while (isPlaying) {
@@ -123,13 +119,9 @@ void VideoChannel::syn_frame_play() {
                   reinterpret_cast<const uint8_t *const *>(frame->data),
                   frame->linesize, 0, frame->height, dst_data, dst_linesize);
 
-        //进行休眠
-        //每一帧还有自己的额外延时时间
-        //extra_delay = repeat_pict / (2*fps)
-        double extra_delay = frame->repeat_pict / (2 * fps);
-        double real_delay = delay_time_per_frame + extra_delay;
-        //单位是：微秒
-        av_usleep(real_delay * 1000000);
+        LOGD("decode a frame size:%d", frame_queue.size());
+        av_usleep(16 * 1000); // 延迟16ms
+
 
         /**
          * 回调出去,去native-lib里渲染

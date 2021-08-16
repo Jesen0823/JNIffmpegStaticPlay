@@ -41,7 +41,7 @@ void PlayerControl::prepareControl() {
     //1、打开URL
     AVDictionary *opts = NULL;
     //设置超时3秒
-    av_dict_set(&opts, "timeout", "3000000", 0);
+    av_dict_set(&opts, "timeout", "10000000", 0);
     //强制指定AVFormatContext中AVInputFormat的。这个参数一般情况下可以设置为NULL，这样FFmpeg可以自动检测AVInputFormat。
     //输入文件的封装格式
     //av_find_input_format("avi") // 可以是rtmp
@@ -58,7 +58,7 @@ void PlayerControl::prepareControl() {
     ret = avformat_find_stream_info(formatContext, 0);
     if (ret < 0) {
         LOGE("find info of stream failed：%s", av_err2str(ret));
-        //TODO 作业:反射通知java
+        // 反射通知java
         if (callJavaHelper) {
             callJavaHelper->onError(THREAD_CHILD, FFMPEG_CAN_NOT_FIND_STREAMS);
         }
@@ -102,16 +102,18 @@ void PlayerControl::prepareControl() {
             if (callJavaHelper) {
                 callJavaHelper->onError(THREAD_CHILD, FFMPEG_OPEN_DECODER_FAIL);
             }
+            return;
         }
 
         // 处理音频视频流
         if (codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
-            AVRational frame_rate = stream->avg_frame_rate;
+            //AVRational frame_rate = stream->avg_frame_rate;
             //  int fps = fram_rate.num / fram_rate.den;
             //int fps = av_q2d(frame_rate);
             videoChannel = new VideoChannel(index,callJavaHelper, codecContext);
+            videoChannel->setRenderFrameCallback(frameCallback);
         } else if (codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
-            audioChannel = new AudioChannel(index, callJavaHelper,codecContext);
+            //audioChannel = new AudioChannel(index, callJavaHelper,codecContext);
         }
     }
 
@@ -192,4 +194,8 @@ void PlayerControl::play() {
     isPlaying = 0;
     audioChannel->stop();
     videoChannel->stop();
+}
+
+void PlayerControl::setRenderFrameCallback(RenderFrameCallback renderCallback) {
+    this->frameCallback = renderCallback;
 }

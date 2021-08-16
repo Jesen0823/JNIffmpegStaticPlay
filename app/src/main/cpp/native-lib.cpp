@@ -13,6 +13,7 @@ extern "C" {
 // 音频相关
 #include "libswresample/swresample.h"
 }
+
 #include "player_control.h"
 #include "call_java_helper.h"
 
@@ -36,29 +37,55 @@ PlayerControl *playerControl;
 
 // 重点：获取到JavaVM
 JavaVM *javaVM = NULL;
-JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved){
+
+JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved) {
     javaVM = vm;
     return JNI_VERSION_1_4;
 }
 
+/**
+ * 渲染
+ * linesize： yuv转换成的ARGB数据一行的像素个数
+ * */
+void renderCallback(uint8_t *data, int linesize, int width, int height) {
+    LOGD("native_lib, renderCallback, linesize:%d, width:%d, height:%d", linesize, width, height);
+    ANativeWindow_setBuffersGeometry(window, width, height, WINDOW_FORMAT_RGBA_8888);
+    ANativeWindow_Buffer window_buffer;
+    if (ANativeWindow_lock(window, &window_buffer, 0)) {
+        ANativeWindow_release(window);
+        window = 0;
+        return;
+    }
+    // windowBuffer是个有宽高的缓冲区，渲染是将数据内存一行行拷贝给windowBuffer
+    uint8_t *dst_data = static_cast<uint8_t *>(window_buffer.bits); //缓冲区
+    int window_linesize = window_buffer.stride * 4; // 一行像素
+    uint8_t *src_data = data; // 数据源
+    for (int i = 0; i < window_buffer.height; ++i) {
+        // 内存拷贝
+        memcpy(dst_data + i * window_linesize, src_data + i * linesize, window_linesize);
+    }
+    ANativeWindow_unlockAndPost(window);
+}
 
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_example_jniffmpegstaticplay_JNIffPlayer_native_1prepare(JNIEnv *env, jobject thiz,
                                                                  jstring path_) {
-    const char *path = env->GetStringUTFChars(path_,0);
+    const char *path = env->GetStringUTFChars(path_, 0);
     callJavaHelper = new CallJavaHelper(javaVM, env, thiz);
 
     playerControl = new PlayerControl(callJavaHelper, path);
+    playerControl->setRenderFrameCallback(renderCallback);
+
     playerControl->prepare();
 
-    env->ReleaseStringUTFChars(path_,path);
+    env->ReleaseStringUTFChars(path_, path);
 }
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_example_jniffmpegstaticplay_JNIffPlayer_native_1start(JNIEnv *env, jobject thiz) {
     // 开始进入播放状态
-    if(playerControl){
+    if (playerControl) {
         // 开始解码
         playerControl->start();
     }
@@ -68,7 +95,7 @@ extern "C"
 JNIEXPORT void JNICALL
 Java_com_example_jniffmpegstaticplay_JNIffPlayer_native_1set_1surface(JNIEnv *env, jobject thiz,
                                                                       jobject surface) {
-    if (window){
+    if (window) {
         ANativeWindow_release(window);
         window = 0;
     }
