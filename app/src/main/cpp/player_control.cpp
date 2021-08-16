@@ -5,12 +5,12 @@
 #include "player_control.h"
 #include "macro.h"
 
-#define LOGI(FORMAT,...) __android_log_print(ANDROID_LOG_INFO,"ffmpegPlay",FORMAT,##__VA_ARGS__);
-#define LOGE(FORMAT,...) __android_log_print(ANDROID_LOG_ERROR,"ffmpegPlay",FORMAT,##__VA_ARGS__);
+#define LOGI(FORMAT, ...) __android_log_print(ANDROID_LOG_INFO,"ffmpegPlay",FORMAT,##__VA_ARGS__);
+#define LOGE(FORMAT, ...) __android_log_print(ANDROID_LOG_ERROR,"ffmpegPlay",FORMAT,##__VA_ARGS__);
 
 
-void *runPrepare(void *args){
-    PlayerControl *playerControl =static_cast<PlayerControl *> (args);
+void *runPrepare(void *args) {
+    PlayerControl *playerControl = static_cast<PlayerControl *> (args);
     //playerControl->prepare();
     playerControl->prepareControl();
     // 一定要返回0
@@ -19,7 +19,7 @@ void *runPrepare(void *args){
 
 PlayerControl::PlayerControl(CallJavaHelper *callJavaHelper, const char *path) {
     this->callJavaHelper = callJavaHelper;
-    url = new char [strlen(path) +1];
+    url = new char[strlen(path) + 1];
     strcpy(url, path);
 }
 
@@ -29,7 +29,7 @@ PlayerControl::~PlayerControl() {
 
 void PlayerControl::prepare() {
     // 传递this对象为了run函数中playerControl可以调用成员方法prepare()
-    pthread_create(&pid_prepare,NULL,runPrepare, this);
+    pthread_create(&pid_prepare, NULL, runPrepare, this);
 }
 
 // 开始视频渲染,该方法中子线程可以访问对象的属性
@@ -46,9 +46,67 @@ void PlayerControl::prepareControl() {
     //av_find_input_format("avi") // 可以是rtmp
     // ret为0 表示成功
     int ret = avformat_open_input(&formatContext, url, NULL, &opts);
-    if (ret!= 0){
-        LOGE("prepareControl"," open failed.");
-        callJavaHelper->onError(THREAD_CHILD, FFMPEG_CAN_NOT_OPEN_URL);
+    if (ret != 0) {
+        LOGE("prepareControl", " open failed.");
+        if (callJavaHelper) {
+            callJavaHelper->onError(THREAD_CHILD, FFMPEG_CAN_NOT_OPEN_URL);
+        }
+        return;
     }
-    avformat_find_stream_info(formatContext, NULL);
+    //2 查找媒体中的流信息
+    ret = avformat_find_stream_info(formatContext, 0);
+    if (ret < 0) {
+        LOGE("find info of stream failed：%s", av_err2str(ret));
+        //TODO 作业:反射通知java
+        if (callJavaHelper) {
+            callJavaHelper->onError(THREAD_CHILD, FFMPEG_CAN_NOT_FIND_STREAMS);
+        }
+        return;
+    }
+    for (int i = 0; i < formatContext->nb_streams; ++i) {
+        AVCodecParameters *codecpar = formatContext->streams[i]->codecpar;
+        // 获取解码器
+        AVCodec *dec = avcodec_find_decoder(codecpar->codec_id);
+        if (!dec) {
+            LOGE("find decoder failed.");
+            if (callJavaHelper) {
+                callJavaHelper->onError(THREAD_CHILD, FFMPEG_CAN_NOT_FIND_STREAMS);
+            }
+            return;
+        }
+
+        // 创建解码器上下文
+        AVCodecContext *codecContext = avcodec_alloc_context3(dec);
+        if (!codecContext) {
+            LOGE("alloc coder context failed.");
+            if (callJavaHelper) {
+                callJavaHelper->onError(THREAD_CHILD, FFMPEG_ALLOC_CODEC_CONTEXT_FAIL);
+            }
+            return;
+        }
+
+        // 复制参数
+        ret = avcodec_parameters_to_context(codecContext, codecpar);
+        if (ret < 0) {
+            LOGE("add params to codecContext failed.");
+            if (callJavaHelper)
+                callJavaHelper->onError(THREAD_CHILD, FFMPEG_CODEC_CONTEXT_PARAMETERS_FAIL);
+            return;
+        }
+        // 打开解码器
+        ret = avcodec_open2(codecContext, dec, 0);
+        if (ret != 0) {
+            LOGE("open coder failed.");
+            if (callJavaHelper) {
+                callJavaHelper->onError(THREAD_CHILD, FFMPEG_OPEN_DECODER_FAIL);
+            }
+        }
+
+        // 处理音频视频流
+        if (codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
+
+        } else if (codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
+
+        }
+    }
 }
