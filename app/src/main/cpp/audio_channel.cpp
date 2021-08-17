@@ -51,12 +51,8 @@ void AudioChannel::play() {
     pkt_queue.setWork(1);
     frame_queue.setWork(1);
     // 创建初始化OPENSL_ES 的线程
-    pthread_create(&pid_init_opensl, 0, task_init_opensl, this);
+    pthread_create(&pid_init_opensl_play, 0, task_init_opensl, this);
     pthread_create(&pid_audio_decode, 0, task_audio_decode, this);
-}
-
-void AudioChannel::stop() {
-
 }
 
 //4.3 创建回调函数
@@ -70,19 +66,6 @@ void bqPlayerCallback(SLAndroidSimpleBufferQueueItf bq, void *context) {
 }
 
 void AudioChannel::initOpenSL() {
-    // 音频引擎
-    SLObjectItf engineObj = NULL;
-    // 音频对象
-    SLEngineItf engineInterface = NULL;
-    // 混音器
-    SLObjectItf outputMixObj = NULL;
-    // 播放器
-    SLObjectItf bqPlayerObj = NULL;
-    // 回调接口
-    SLPlayItf bqPlayerInterface = NULL;
-    // 缓冲队列
-    SLAndroidSimpleBufferQueueItf bqPlayerBufferQueue = NULL;
-
     /**
      * 1.1. 创建引擎对象
      * */
@@ -292,6 +275,45 @@ int AudioChannel::getPCM() {
     return pcm_data_size;
 }
 
+/**
+ * 释放
+ * */
+void AudioChannel::stop() {
+    isPlaying = 0;
+    callJavaHelper = 0;
+    pkt_queue.setWork(0);
+    frame_queue.setWork(0);
+    pthread_join(pid_audio_decode, 0);
+    pthread_join(pid_init_opensl_play, 0);
+    if (swrContext) {
+        swr_free(&swrContext);
+        swrContext = 0;
+    }
+    /**
+    * 7. 释放OpenSL_ES引擎相关
+    */
+    //7.1 设置播放器状态为停止状态
+    if (bqPlayerInterface) {
+        (*bqPlayerInterface)->SetPlayState(bqPlayerInterface, SL_PLAYSTATE_STOPPED);
+    }
+    //7.2 销毁播放器
+    if (bqPlayerObj) {
+        (*bqPlayerObj)->Destroy(bqPlayerObj);
+        bqPlayerObj = 0;
+        bqPlayerBufferQueue = 0;
+    }
+    //7.3 销毁混音器
+    if (outputMixObj) {
+        (*outputMixObj)->Destroy(outputMixObj);
+        outputMixObj = 0;
+    }
+    //7.4 销毁引擎
+    if (engineObj) {
+        (*engineObj)->Destroy(engineObj);
+        engineObj = 0;
+        engineInterface = 0;
+    }
+}
 
 AudioChannel::~AudioChannel() {
     if (swrContext) {

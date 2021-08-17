@@ -35,8 +35,22 @@ public:
     int out_buffers_size;
 
 private:
-    pthread_t pid_init_opensl;
+    // 音频引擎
+    SLObjectItf engineObj = NULL;
+    // 音频对象
+    SLEngineItf engineInterface = NULL;
+    // 混音器
+    SLObjectItf outputMixObj = NULL;
+    // 播放器
+    SLObjectItf bqPlayerObj = NULL;
+    // 回调接口
+    SLPlayItf bqPlayerInterface = NULL;
+    // 缓冲队列
+    SLAndroidSimpleBufferQueueItf bqPlayerBufferQueue = NULL;
+
+    pthread_t pid_init_opensl_play;
     pthread_t pid_audio_decode;
+
     SwrContext *swrContext = 0;
     int out_channels;   // 声道数
     int out_sample_size; // 采样位数
