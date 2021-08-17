@@ -117,13 +117,18 @@ Java_com_example_jniffmpegstaticplay_JNIffPlayer_native_1start(JNIEnv *env, jobj
 extern "C"
 JNIEXPORT jint JNICALL
 Java_com_example_jniffmpegstaticplay_JNIffPlayer_native_1get_1duration(JNIEnv *env, jobject thiz) {
-    // TODO: implement get_durative_native()
+    if (playerControl) {
+        return (jint) playerControl->get_duration();
+    }
+    return 0;
 }
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_example_jniffmpegstaticplay_JNIffPlayer_native_1seek(JNIEnv *env, jobject thiz,
                                                               jint seek_point) {
-    // TODO: implement seek_native()
+    if (playerControl) {
+        playerControl->seekTo(seek_point);
+    }
 }
 extern "C"
 JNIEXPORT void JNICALL

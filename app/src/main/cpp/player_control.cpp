@@ -17,10 +17,14 @@ PlayerControl::PlayerControl(CallJavaHelper *callJavaHelper, const char *path) {
     this->callJavaHelper = callJavaHelper;
     url = new char[strlen(path) + 1];
     strcpy(url, path);
+    // 初始化seekMutex
+    pthread_mutex_init(&seekMutex, 0);
 }
 
 PlayerControl::~PlayerControl() {
-
+    DELETE(url);
+    DELETE(callJavaHelper);
+    pthread_mutex_destroy(&seekMutex);
 }
 
 void PlayerControl::prepare() {
@@ -59,6 +63,9 @@ void PlayerControl::prepareControl() {
         }
         return;
     }
+
+    duration = formatContext->duration / AV_TIME_BASE;
+
     for (int index = 0; index < formatContext->nb_streams; ++index) {
         AVStream *stream = formatContext->streams[index];
         AVCodecParameters *codecpar = stream->codecpar;
@@ -166,7 +173,9 @@ void PlayerControl::play() {
 
         // 读取数据包
         AVPacket *packet = av_packet_alloc();
+        pthread_mutex_lock(&seekMutex);
         ret = av_read_frame(formatContext, packet);
+        pthread_mutex_unlock(&seekMutex);
         if (ret == 0) {
             // 将数据包加入队列
             if (audioChannel && packet->stream_index == audioChannel->channelId) {
@@ -197,4 +206,58 @@ void PlayerControl::play() {
 
 void PlayerControl::setRenderFrameCallback(RenderFrameCallback renderCallback) {
     this->frameCallback = renderCallback;
+}
+
+int PlayerControl::get_duration() const {
+    return duration;
+}
+
+void PlayerControl::seekTo(int point) {
+    if (point < 0 || point > duration) {
+        return;
+    }
+    if (!audioChannel && !videoChannel) {
+        return;
+    }
+    if (!formatContext) {
+        return;
+    }
+    pthread_mutex_lock(&seekMutex);
+    /**
+     * seek函数参数说明：
+     * 1,上下文
+     * 2，流索引，-1：表示选择的是默认流
+     * 3，要seek到的时间戳
+     * 4，seek的方式
+     * AVSEEK_FLAG_BACKWARD： 表示seek到请求的时间戳之前的最靠近的一个关键帧
+     * AVSEEK_FLAG_BYTE：基于字节位置seek
+     * AVSEEK_FLAG_ANY：任意帧（可能不是关键帧，会花屏）
+     * AVSEEK_FLAG_FRAME：基于帧数seek
+     * */
+    int ret = av_seek_frame(formatContext, -1, point * AV_TIME_BASE, AVSEEK_FLAG_BACKWARD);
+    if (ret < 0) {
+        if (callJavaHelper) {
+            callJavaHelper->onError(THREAD_CHILD, ret);
+        }
+        return;
+    }
+    if (audioChannel) {
+        audioChannel->pkt_queue.setWork(0);
+        audioChannel->frame_queue.setWork(0);
+        audioChannel->pkt_queue.clear();
+        audioChannel->frame_queue.clear();
+        //清除数据后，让队列重新工作
+        audioChannel->pkt_queue.setWork(1);
+        audioChannel->frame_queue.setWork(1);
+    }
+    if (videoChannel) {
+        videoChannel->pkt_queue.setWork(0);
+        videoChannel->frame_queue.setWork(0);
+        videoChannel->pkt_queue.clear();
+        videoChannel->frame_queue.clear();
+        //清除数据后，让队列重新工作
+        videoChannel->pkt_queue.setWork(1);
+        videoChannel->frame_queue.setWork(1);
+    }
+    pthread_mutex_unlock(&seekMutex);
 }

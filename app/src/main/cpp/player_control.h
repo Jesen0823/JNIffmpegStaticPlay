@@ -27,9 +27,14 @@ public:
     ~PlayerControl();
 
     void start();
+
     void play();
 
     void setRenderFrameCallback(RenderFrameCallback renderCallback);
+
+    int get_duration() const;
+
+    void seekTo(int point);
 
 private:
     int isPlaying;
@@ -42,6 +47,9 @@ private:
     AudioChannel *audioChannel = 0;
     VideoChannel *videoChannel = 0;
     RenderFrameCallback frameCallback;
+
+    int duration = 0;
+    pthread_mutex_t seekMutex;
 };
 
 #endif //JNIFFMPEGSTATICPLAY_PLAYER_CONTROL_H
