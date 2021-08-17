@@ -13,6 +13,24 @@ void *runPrepare(void *args) {
     return 0;
 }
 
+void *task_stop_play(void *args) {
+    PlayerControl *playerControl = static_cast<PlayerControl *>(args);
+    // 要保证prepare方法（子线程中）执行完再释放（在主线程）
+    playerControl->isPlaying = 0;
+    pthread_join(playerControl->pid_prepare, 0);
+
+    if (playerControl->formatContext) {
+        avformat_close_input(&playerControl->formatContext);
+        avformat_free_context(playerControl->formatContext);
+        playerControl->formatContext = 0;
+    }
+
+    DELETE(playerControl->videoChannel);
+    DELETE(playerControl->audioChannel);
+    DELETE(playerControl);
+    return 0;
+}
+
 PlayerControl::PlayerControl(CallJavaHelper *callJavaHelper, const char *path) {
     this->callJavaHelper = callJavaHelper;
     url = new char[strlen(path) + 1];
@@ -260,4 +278,10 @@ void PlayerControl::seekTo(int point) {
         videoChannel->frame_queue.setWork(1);
     }
     pthread_mutex_unlock(&seekMutex);
+}
+
+void PlayerControl::stop() {
+    callJavaHelper = 0;
+    pthread_create(&pid_stop, 0, task_stop_play, this);
+
 }

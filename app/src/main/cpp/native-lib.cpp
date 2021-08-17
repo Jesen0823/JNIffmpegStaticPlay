@@ -41,11 +41,12 @@ CallJavaHelper *callJavaHelper;
 ANativeWindow *window;
 PlayerControl *playerControl;
 
+JavaVM *javaVM = NULL;
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;//静态初始化mutex
+
 /**
  * 重点：获取到JavaVM
  * */
-JavaVM *javaVM = NULL;
-
 JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved) {
     javaVM = vm;
     return JNI_VERSION_1_4;
@@ -57,11 +58,17 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved) {
  * */
 void renderCallback(uint8_t *data, int linesize, int width, int height) {
     LOGD("native_lib, renderCallback, linesize:%d, width:%d, height:%d", linesize, width, height);
+    pthread_mutex_lock(&mutex);
+    if (!window) {
+        pthread_mutex_unlock(&mutex);
+        return;
+    }
     ANativeWindow_setBuffersGeometry(window, width, height, WINDOW_FORMAT_RGBA_8888);
     ANativeWindow_Buffer window_buffer;
     if (ANativeWindow_lock(window, &window_buffer, 0)) {
         ANativeWindow_release(window);
         window = 0;
+        pthread_mutex_unlock(&mutex);
         return;
     }
     // windowBuffer是个有宽高的缓冲区，渲染是将数据内存一行行拷贝给windowBuffer
@@ -73,6 +80,7 @@ void renderCallback(uint8_t *data, int linesize, int width, int height) {
         memcpy(dst_data + i * window_linesize, src_data + i * linesize, window_linesize);
     }
     ANativeWindow_unlockAndPost(window);
+    pthread_mutex_unlock(&mutex);
 }
 
 /****************************** 来自Java层的调用 *********************************/
@@ -81,12 +89,14 @@ extern "C"
 JNIEXPORT void JNICALL
 Java_com_example_jniffmpegstaticplay_JNIffPlayer_native_1set_1surface(JNIEnv *env, jobject thiz,
                                                                       jobject surface) {
+    pthread_mutex_lock(&mutex);
     if (window) {
         ANativeWindow_release(window);
         window = 0;
     }
     // 创建窗口用于显示视频
     window = ANativeWindow_fromSurface(env, surface);
+    pthread_mutex_unlock(&mutex);
 }
 
 extern "C"
@@ -130,13 +140,24 @@ Java_com_example_jniffmpegstaticplay_JNIffPlayer_native_1seek(JNIEnv *env, jobje
         playerControl->seekTo(seek_point);
     }
 }
-extern "C"
-JNIEXPORT void JNICALL
-Java_com_example_jniffmpegstaticplay_JNIffPlayer_native_1release(JNIEnv *env, jobject thiz) {
-    // TODO: implement release_native()
-}
+
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_example_jniffmpegstaticplay_JNIffPlayer_native_1stop(JNIEnv *env, jobject thiz) {
-    // TODO: implement stop_native()
+    if (playerControl) {
+        playerControl->stop();
+    }
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_example_jniffmpegstaticplay_JNIffPlayer_native_1release(JNIEnv *env, jobject thiz) {
+    pthread_mutex_lock(&mutex);
+    if (window) {
+        //把老的释放
+        ANativeWindow_release(window);
+        window = 0;
+    }
+    pthread_mutex_unlock(&mutex);
+    DELETE(playerControl);
 }

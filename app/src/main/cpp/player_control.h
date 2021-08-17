@@ -36,18 +36,22 @@ public:
 
     void seekTo(int point);
 
-private:
-    int isPlaying;
-    pthread_t pid_prepare; // 准备线程
-    pthread_t pid_dec_play; // 解码线程运行到播放结束
-    AVFormatContext *formatContext;
-    char *url;
-    CallJavaHelper *callJavaHelper;
+    void stop();
+
 
     AudioChannel *audioChannel = 0;
     VideoChannel *videoChannel = 0;
-    RenderFrameCallback frameCallback;
+    int isPlaying;
+    pthread_t pid_prepare;
+    AVFormatContext *formatContext;
 
+private:
+    // 准备线程
+    pthread_t pid_dec_play; // 解码线程运行到播放结束
+    pthread_t pid_stop; // 停止播放
+    char *url;
+    CallJavaHelper *callJavaHelper;
+    RenderFrameCallback frameCallback;
     int duration = 0;
     pthread_mutex_t seekMutex;
 };
