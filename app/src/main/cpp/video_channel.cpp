@@ -78,7 +78,12 @@ void VideoChannel::play() {
 }
 
 void VideoChannel::stop() {
-
+    isPlaying = 0;
+    callJavaHelper = 0;
+    pkt_queue.setWork(0);
+    frame_queue.setWork(0);
+    pthread_join(pid_video_decode, 0);
+    pthread_join(pid_video_play, 0);
 }
 
 void VideoChannel::decodePacket() {
@@ -91,6 +96,7 @@ void VideoChannel::decodePacket() {
         if (!ret) {
             continue;
         }
+
         ret = avcodec_send_packet(codecContext, packet);
         releaseAVPacket(&packet);
         if (ret == AVERROR(EAGAIN)) {

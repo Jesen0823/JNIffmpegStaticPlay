@@ -1,3 +1,11 @@
+// JNI层的总入口：
+// 1. 播放由player_control.cpp管理
+// 2. 音频由audio_channel.cpp管理，公共部分交由父类base_channel.h
+// 3. 视频由video_channel.cpp管理，公共部分交由父类base_channel.h
+//
+// Created by X1 Carbon on 2021/8/16.
+//
+
 #include <jni.h>
 #include <string>
 
@@ -29,13 +37,13 @@ extern "C" {
  * 缓冲区拿到每一行首地址，把每一行RGB数据拷贝到缓冲区
  * */
 
-#define MAX_AUDIO_FRAME_SIZE 48000 * 4
-
 CallJavaHelper *callJavaHelper;
 ANativeWindow *window;
 PlayerControl *playerControl;
 
-// 重点：获取到JavaVM
+/**
+ * 重点：获取到JavaVM
+ * */
 JavaVM *javaVM = NULL;
 
 JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved) {
@@ -67,6 +75,20 @@ void renderCallback(uint8_t *data, int linesize, int width, int height) {
     ANativeWindow_unlockAndPost(window);
 }
 
+/****************************** 来自Java层的调用 *********************************/
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_example_jniffmpegstaticplay_JNIffPlayer_native_1set_1surface(JNIEnv *env, jobject thiz,
+                                                                      jobject surface) {
+    if (window) {
+        ANativeWindow_release(window);
+        window = 0;
+    }
+    // 创建窗口用于显示视频
+    window = ANativeWindow_fromSurface(env, surface);
+}
+
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_example_jniffmpegstaticplay_JNIffPlayer_native_1prepare(JNIEnv *env, jobject thiz,
@@ -81,6 +103,7 @@ Java_com_example_jniffmpegstaticplay_JNIffPlayer_native_1prepare(JNIEnv *env, jo
 
     env->ReleaseStringUTFChars(path_, path);
 }
+
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_example_jniffmpegstaticplay_JNIffPlayer_native_1start(JNIEnv *env, jobject thiz) {
@@ -89,16 +112,26 @@ Java_com_example_jniffmpegstaticplay_JNIffPlayer_native_1start(JNIEnv *env, jobj
         // 开始解码
         playerControl->start();
     }
+}
 
+extern "C"
+JNIEXPORT jint JNICALL
+Java_com_example_jniffmpegstaticplay_JNIffPlayer_native_1get_1duration(JNIEnv *env, jobject thiz) {
+    // TODO: implement get_durative_native()
 }
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_example_jniffmpegstaticplay_JNIffPlayer_native_1set_1surface(JNIEnv *env, jobject thiz,
-                                                                      jobject surface) {
-    if (window) {
-        ANativeWindow_release(window);
-        window = 0;
-    }
-    // 创建窗口用于显示视频
-    window = ANativeWindow_fromSurface(env, surface);
+Java_com_example_jniffmpegstaticplay_JNIffPlayer_native_1seek(JNIEnv *env, jobject thiz,
+                                                              jint seek_point) {
+    // TODO: implement seek_native()
+}
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_example_jniffmpegstaticplay_JNIffPlayer_native_1release(JNIEnv *env, jobject thiz) {
+    // TODO: implement release_native()
+}
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_example_jniffmpegstaticplay_JNIffPlayer_native_1stop(JNIEnv *env, jobject thiz) {
+    // TODO: implement stop_native()
 }

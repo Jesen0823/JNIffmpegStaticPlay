@@ -20,10 +20,12 @@ import java.io.File;
 public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBarChangeListener {
 
     public static String httpUrl = "http://vjs.zencdn.net/v/oceans.mp4";
+    private static final String TAG = "MainActivity";
 
     private ActivityMainBinding binding;
     public JNIffPlayer jniffPlayer;
-    private int progress;
+    private boolean isTouch;
+    private boolean isSeek;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,7 +53,7 @@ public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBar
             public void onClick(View view) {
                 File file = new File(Environment.getExternalStorageDirectory(),"innput.mp4");
 
-                OLog.d("MainActivity, path:"+file.getAbsolutePath());
+                OLog.d(TAG + " path:" + file.getAbsolutePath());
                 jniffPlayer.setDataSource(file.getAbsolutePath());
                 jniffPlayer.prepare();
             }
@@ -71,21 +73,49 @@ public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBar
 
         AudioManager myAudioMgr = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
         String nativeSampleRate = myAudioMgr.getProperty(AudioManager.PROPERTY_OUTPUT_SAMPLE_RATE);
-        OLog.d("MainActivity" + "hardware support samplerate: " + nativeSampleRate);
+        OLog.d(TAG + " hardware support samplerate: " + nativeSampleRate);
     }
 
     private void setPlayerListener() {
         jniffPlayer.setOnProgressListener(new JNIffPlayer.OnProgressListener() {
             @Override
-            public void onProgress(int progress) {
-                OLog.d("MainActivity,from JNI, onProgress:" + progress);
+            public void onProgress(final int progress) {
+                OLog.d(TAG + ",from JNI, onProgress:" + progress);
+                if (!isTouch) {
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            int duration = jniffPlayer.getDuration();
+                            OLog.d(TAG + ", duration: " + duration);
+                            if (duration != 0) {
+                                if (isSeek) {
+                                    isSeek = false;
+                                    return;
+                                }
+                                binding.seekBar.setProgress(progress * 100 / duration);
+                            }
+                        }
+                    });
+                }
             }
         });
 
         jniffPlayer.setOnPrepareListener(new JNIffPlayer.OnPrepareListener() {
             @Override
-            public void onPrepare() {
-                OLog.d("MainActivity,from JNI, prepare finish, now start");
+            public void onPrepared() {
+                OLog.d(TAG + ",from JNI, prepare finish, now start");
+                int duration = jniffPlayer.getDuration();
+                if (duration != 0) {
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            binding.seekBar.setVisibility(View.VISIBLE);
+                        }
+                    });
+                } else {
+                    OLog.d(TAG + ", play type is Live.");
+                }
+
                 jniffPlayer.start();
             }
         });
@@ -93,23 +123,45 @@ public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBar
         jniffPlayer.setOnErrorListener(new JNIffPlayer.OnErrorListener() {
             @Override
             public void onError(int errorCode) {
-                OLog.d("MainActivity,from JNI, Error:" + errorCode);
+                OLog.d(TAG + ",from JNI, Error:" + errorCode);
             }
         });
     }
 
     @Override
-    public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
-
+    public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+        OLog.d(TAG + " onProgressChanged, progress:" + progress + ", fromUser:" + fromUser);
     }
 
     @Override
     public void onStartTrackingTouch(SeekBar seekBar) {
-
+        isTouch = true;
     }
 
     @Override
     public void onStopTrackingTouch(SeekBar seekBar) {
+        isSeek = true;
+        isTouch = false;
+        int curSeekBarProgress = binding.seekBar.getProgress();
+        int duration = jniffPlayer.getDuration();
+        int seekPoint = curSeekBarProgress * duration / 100;
+        jniffPlayer.seekTo(seekPoint);
+    }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        jniffPlayer.stop();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        jniffPlayer.release();
     }
 }

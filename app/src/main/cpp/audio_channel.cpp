@@ -11,7 +11,7 @@ AudioChannel::AudioChannel(int id, CallJavaHelper *callJavaHelper,
     //缓冲区大小如何定？
     out_channels = av_get_channel_layout_nb_channels(AV_CH_LAYOUT_STEREO);
     out_sample_size = av_get_bytes_per_sample(AV_SAMPLE_FMT_S16);
-    out_sample_rate = 44100;
+    out_sample_rate = 48000;
     // 2(通道数) * 2（16bit=2字节）*44100（采样率）
     // 初始化buffer, out_pcm_buffers
     out_buffers_size = out_channels * out_sample_size * out_sample_rate;
@@ -84,23 +84,26 @@ void AudioChannel::initOpenSL() {
     SLAndroidSimpleBufferQueueItf bqPlayerBufferQueue = NULL;
 
     /**
-     * 1. 初始化引擎
+     * 1.1. 创建引擎对象
      * */
     SLresult ret;
     ret = slCreateEngine(&engineObj, 0, NULL, 0, NULL, NULL);
     if (SL_RESULT_SUCCESS != ret) {
-        LOGE("sl Create Engine failed");
+        LOGE("initOpenSL, sl Create Engine failed");
         return;
     }
+    /**
+     * 1.2. 初始化引擎
+     * */
     ret = (*engineObj)->Realize(engineObj, SL_BOOLEAN_FALSE);
     if (SL_RESULT_SUCCESS != ret) {
-        LOGE("sl Realize failed");
+        LOGE("initOpenSL, sl Realize failed");
         return;
     }
     // 1.3 获取引擎接口 SLEngineItf engineInterface相当于SurfaceHolder
     ret = (*engineObj)->GetInterface(engineObj, SL_IID_ENGINE, &engineInterface);
     if (SL_RESULT_SUCCESS != ret) {
-        LOGE("sSLEngineI GetInterface failed");
+        LOGE("initOpenSL, sSLEngineI GetInterface failed");
         return;
     }
     /**
@@ -110,13 +113,13 @@ void AudioChannel::initOpenSL() {
     ret = (*engineInterface)->CreateOutputMix(engineInterface, &outputMixObj, 0,
                                               0, 0);
     if (SL_RESULT_SUCCESS != ret) {
-        LOGE("CreateOutputMix failed");
+        LOGE("initOpenSL, CreateOutputMix failed");
         return;
     }
     // 2.2 初始化混音器
     ret = (*outputMixObj)->Realize(outputMixObj, SL_BOOLEAN_FALSE);
     if (SL_RESULT_SUCCESS != ret) {
-        LOGE("OutputMix Realize failed");
+        LOGE("initOpenSL, OutputMix Realize failed");
         return;
     }
 
@@ -164,19 +167,19 @@ void AudioChannel::initOpenSL() {
                                                 ids,           // 播放队列id
                                                 req);          // 是否选择默认内置的播放队列
     if (SL_RESULT_SUCCESS != ret) {
-        LOGE("CreateAudioPlayer failed");
+        LOGE("initOpenSL, CreateAudioPlayer failed");
         return;
     }
     //3.4 初始化播放器：SLObjectItf bqPlayerObject
     ret = (*bqPlayerObj)->Realize(bqPlayerObj, SL_BOOLEAN_FALSE);
     if (SL_RESULT_SUCCESS != ret) {
-        LOGE("init AudioPlayer failed");
+        LOGE("initOpenSL, init AudioPlayer failed");
         return;
     }
     //3.5 获取播放器接口：SLPlayItf bqPlayerPlay
-    ret = (*bqPlayerObj)->GetInterface(bqPlayerObj, SL_IID_PLAY, &bqPlayerBufferQueue);
+    ret = (*bqPlayerObj)->GetInterface(bqPlayerObj, SL_IID_PLAY, &bqPlayerInterface);
     if (SL_RESULT_SUCCESS != ret) {
-        LOGE("AudioPlayer GetInterface failed");
+        LOGE("initOpenSL, AudioPlayer GetInterface failed");
         return;
     }
     /**
@@ -197,7 +200,7 @@ void AudioChannel::initOpenSL() {
      * 6、手动激活回调函数,会触发缓冲区不断地获取数据,主动去“要数据”
      */
     bqPlayerCallback(bqPlayerBufferQueue, this);
-    LOGD("调用播放， packet size: %d", this->pkt_queue.size());
+    LOGD("initOpenSL, 调用播放， packet size: %d", this->pkt_queue.size());
 }
 
 void AudioChannel::decodeAudio() {
@@ -277,9 +280,9 @@ int AudioChannel::getPCM() {
         // 计算同步时钟：
         // (pts 是帧显示的开始时间) * time_base(特殊刻度单位) = 以time_base计算的帧开始显示时间
         syn_clock = frame->best_effort_timestamp * av_q2d(time_base);
-        //syn_clock = frame->pts * av_q2d(time_base);
-        LOGD("best_effort_timestamp VS pts: %\" PRId64\" VS %\" PRId64\" ...",
-             frame->best_effort_timestamp, frame->pts);
+        //syn_clock = frame->pts * av_q2d(time_base); // 通过打印发现跟上面一样
+        /*LOGD("best_effort_timestamp VS pts: %" PRId64" VS %" PRId64" ...",
+             frame->best_effort_timestamp, frame->pts);*/
         if (callJavaHelper) {
             callJavaHelper->onProgress(THREAD_CHILD, syn_clock);
         }
