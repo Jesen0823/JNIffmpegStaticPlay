@@ -1,6 +1,8 @@
 package com.example.jniffmpegstaticplay;
 
 import android.Manifest;
+import android.content.Context;
+import android.media.AudioManager;
 import android.os.Bundle;
 import android.os.Environment;
 import android.view.View;
@@ -42,6 +44,7 @@ public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBar
 
         AppUtil.requestPermissions(MainActivity.this, Manifest.permission.READ_EXTERNAL_STORAGE);
         AppUtil.requestPermissions(MainActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE);
+        AppUtil.requestPermissions(MainActivity.this, Manifest.permission.RECORD_AUDIO);
 
         binding.btnPlay.setOnClickListener(new View.OnClickListener(){
             @Override
@@ -57,10 +60,7 @@ public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBar
         binding.btnAudio.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                AudioPlayer audioPlayer = new AudioPlayer();
-                String input = new File(Environment.getExternalStorageDirectory(), "jiarihaitan.mp3").getAbsolutePath();
-                String output = new File(Environment.getExternalStorageDirectory(), "jiarihaitan.pcm").getAbsolutePath();
-                audioPlayer.soundPlay(input, output);
+
             }
         });
 
@@ -68,6 +68,10 @@ public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBar
             jniffPlayer.setDataSource(httpUrl);
             jniffPlayer.prepare();
         });
+
+        AudioManager myAudioMgr = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+        String nativeSampleRate = myAudioMgr.getProperty(AudioManager.PROPERTY_OUTPUT_SAMPLE_RATE);
+        OLog.d("MainActivity" + "hardware support samplerate: " + nativeSampleRate);
     }
 
     private void setPlayerListener() {

@@ -149,11 +149,11 @@ void PlayerControl::play() {
     int ret = 0;
     while (isPlaying) {
         // 防止队列阻塞
-        if (audioChannel && audioChannel->pkt_queue.size() > 100) {
+        /*if (audioChannel && audioChannel->pkt_queue.size() > 100) {
             // 生产速度大于消费，休眠10ms
             av_usleep(1000 * 10);
             continue;
-        }
+        }*/
         if (videoChannel && videoChannel->pkt_queue.size() > 100) {
             // 生产速度大于消费，休眠10ms
             av_usleep(1000 * 10);

@@ -4,7 +4,6 @@
 
 #include "audio_channel.h"
 #include "call_java_helper.h"
-#include "player_control.h"
 
 AudioChannel::AudioChannel(int id, CallJavaHelper *callJavaHelper,
                            AVCodecContext *codecContext) : BaseChannel(id, callJavaHelper,
@@ -29,13 +28,13 @@ AudioChannel::AudioChannel(int id, CallJavaHelper *callJavaHelper,
     }
 }
 
-void *init_opensl(void *args) {
+void *task_init_opensl(void *args) {
     AudioChannel *audioChannel = static_cast<AudioChannel *>(args);
     audioChannel->initOpenSL();
     return 0;
 }
 
-void *audio_decode(void *args) {
+void *task_audio_decode(void *args) {
     AudioChannel *audioChannel = static_cast<AudioChannel *>(args);
     audioChannel->decodeAudio();
     return 0;
@@ -52,8 +51,8 @@ void AudioChannel::play() {
     pkt_queue.setWork(1);
     frame_queue.setWork(1);
     // 创建初始化OPENSL_ES 的线程
-    pthread_create(&pid_init_opensl, NULL, init_opensl, NULL);
-    pthread_create(&pid_audio_decode, NULL, audio_decode, NULL);
+    pthread_create(&pid_init_opensl, 0, task_init_opensl, this);
+    pthread_create(&pid_audio_decode, 0, task_audio_decode, this);
 }
 
 void AudioChannel::stop() {
@@ -213,14 +212,12 @@ void AudioChannel::decodeAudio() {
         }
         // 拿到了数据包（编码压缩了的），需要把数据包给解码器进行解码
         ret = avcodec_send_packet(codecContext, packet);
-        releaseAVPacket(&packet);
-        if (ret == AVERROR(EAGAIN)) {
-            LOGE("audio need more packet data...");
-            continue;
-        } else if (ret < 0) {
+        if (ret < 0) {
             LOGE("read audio packet failed.");
             break;
         }
+        releaseAVPacket(&packet);
+
         AVFrame *frame = av_frame_alloc();
         ret = avcodec_receive_frame(codecContext, frame);
         if (ret == AVERROR(EAGAIN)) {

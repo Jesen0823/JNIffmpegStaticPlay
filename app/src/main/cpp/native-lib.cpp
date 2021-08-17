@@ -101,5 +101,4 @@ Java_com_example_jniffmpegstaticplay_JNIffPlayer_native_1set_1surface(JNIEnv *en
     }
     // 创建窗口用于显示视频
     window = ANativeWindow_fromSurface(env, surface);
-
 }
