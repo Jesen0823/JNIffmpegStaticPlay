@@ -102,13 +102,14 @@ void PlayerControl::prepareControl() {
 
         // 处理音频视频流
         if (codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
-            //AVRational frame_rate = stream->avg_frame_rate;
-            //  int fps = fram_rate.num / fram_rate.den;
-            //int fps = av_q2d(frame_rate);
-            videoChannel = new VideoChannel(index,callJavaHelper, codecContext);
+            AVRational frame_rate = stream->avg_frame_rate;
+            int fps = av_q2d(frame_rate); // 就是 frame_rate.num / frame_rate.den;
+            LOGD("player_control, 帧率: %d", fps);
+            videoChannel = new VideoChannel(index, callJavaHelper, codecContext, stream->time_base);
             videoChannel->setRenderFrameCallback(frameCallback);
+            videoChannel->setFps(fps);
         } else if (codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
-            audioChannel = new AudioChannel(index, callJavaHelper, codecContext);
+            audioChannel = new AudioChannel(index, callJavaHelper, codecContext, stream->time_base);
         }
     }
 
@@ -120,6 +121,9 @@ void PlayerControl::prepareControl() {
         }
         return;
     }
+
+    videoChannel->audioChannel = audioChannel;
+
     //准备好了，反射通知java
     if (callJavaHelper) {
         LOGE("parpare and init success.");
@@ -149,11 +153,11 @@ void PlayerControl::play() {
     int ret = 0;
     while (isPlaying) {
         // 防止队列阻塞
-        /*if (audioChannel && audioChannel->pkt_queue.size() > 100) {
+        if (audioChannel && audioChannel->pkt_queue.size() > 100) {
             // 生产速度大于消费，休眠10ms
             av_usleep(1000 * 10);
             continue;
-        }*/
+        }
         if (videoChannel && videoChannel->pkt_queue.size() > 100) {
             // 生产速度大于消费，休眠10ms
             av_usleep(1000 * 10);

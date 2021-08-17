@@ -6,8 +6,8 @@
 #include "call_java_helper.h"
 
 AudioChannel::AudioChannel(int id, CallJavaHelper *callJavaHelper,
-                           AVCodecContext *codecContext) : BaseChannel(id, callJavaHelper,
-                                                                       codecContext) {
+                           AVCodecContext *codecContext, AVRational time_base)
+        : BaseChannel(id, callJavaHelper, codecContext, time_base) {
     //缓冲区大小如何定？
     out_channels = av_get_channel_layout_nb_channels(AV_CH_LAYOUT_STEREO);
     out_sample_size = av_get_bytes_per_sample(AV_SAMPLE_FMT_S16);
@@ -273,8 +273,17 @@ int AudioChannel::getPCM() {
 
         // 获取swr_convert转换后 out_samples个 *2字节（16位）*2（双声道）
         pcm_data_size = out_samples * out_sample_size * out_channels;
-        break;
 
+        // 计算同步时钟：
+        // (pts 是帧显示的开始时间) * time_base(特殊刻度单位) = 以time_base计算的帧开始显示时间
+        syn_clock = frame->best_effort_timestamp * av_q2d(time_base);
+        //syn_clock = frame->pts * av_q2d(time_base);
+        LOGD("best_effort_timestamp VS pts: %\" PRId64\" VS %\" PRId64\" ...",
+             frame->best_effort_timestamp, frame->pts);
+        if (callJavaHelper) {
+            callJavaHelper->onProgress(THREAD_CHILD, syn_clock);
+        }
+        break;
     }//end while
     releaseAVFrame(&frame);
     return pcm_data_size;

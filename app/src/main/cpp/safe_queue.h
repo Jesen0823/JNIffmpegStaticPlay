@@ -1,5 +1,5 @@
 //
-// Created by Administrator on 2019/8/12.
+// Created by X1 Carbon on 2021/8/16.
 //
 
 #ifndef NE_PLAYER_2_SAFE_QUEUE_H
@@ -13,6 +13,8 @@ using namespace std;
 template<typename T>
 class SafeQueue {
     typedef void (*ReleaseCallback)(T *);
+
+    typedef void (*SyncHandle)(queue<T> &);
 
 public:
     SafeQueue() {
@@ -127,6 +129,21 @@ public:
         this->releaseCallback = releaseCallback;
     }
 
+    void setSyncHandle(SyncHandle syncHandle) {
+        this->syncHandle = syncHandle;
+    }
+
+    /**
+     * 同步操作
+     */
+    void sync() {
+        //先锁起来
+        pthread_mutex_lock(&mutex);
+        syncHandle(q);
+        //解锁
+        pthread_mutex_unlock(&mutex);
+    }
+
 
 private:
     queue<T> q;
@@ -134,6 +151,7 @@ private:
     pthread_cond_t cond;
     int work;//标记队列是否工作
     ReleaseCallback releaseCallback;
+    SyncHandle syncHandle;
 };
 
 

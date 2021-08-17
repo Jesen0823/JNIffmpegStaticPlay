@@ -12,14 +12,49 @@ extern "C" {
 #include <libavcodec/avcodec.h>
 }
 
-VideoChannel::VideoChannel(int id, CallJavaHelper *callJavaHelper, AVCodecContext *codecContext)
-        : BaseChannel(id, callJavaHelper, codecContext) {
+/**
+ * 主动丢帧：Packet
+ * 如果丢packet队列,要防止丢掉关键帧,否则会引起花屏
+ * */
+void dropPacket(queue<AVPacket *> &q) {
+    while (!q.empty()) {
+        LOGD("video_cahannel,丢掉视频Packet帧。。");
+        AVPacket *pkt = q.front();
+        if (pkt->flags != AV_PKT_FLAG_KEY) {
+            q.pop();
+            BaseChannel::releaseAVPacket(&pkt);
+        } else {
+            break;
+        }
+    }
+}
 
+/**
+ * 主动丢帧：Frame
+ * 比丢Packet更好
+ * */
+void dropFrame(queue<AVFrame *> &q) {
+    while (!q.empty()) {
+        LOGD("video_cahannel,丢掉视频Frame帧。。");
+        AVFrame *frame = q.front();
+        q.pop();
+        BaseChannel::releaseAVFrame(&frame);
+    }
+}
+
+VideoChannel::VideoChannel(int id, CallJavaHelper *callJavaHelper, AVCodecContext *codecContext,
+                           AVRational time_base)
+        : BaseChannel(id, callJavaHelper, codecContext, time_base) {
+
+    // 设置音视频同步时的丢帧策略：丢Packet还是Frame?
+    frame_queue.setReleaseCallback(releaseAVFrame);
+    frame_queue.setSyncHandle(dropFrame);
 }
 
 VideoChannel::~VideoChannel() {
 
 }
+
 
 void *decode(void *args) {
     VideoChannel *videoChannel = static_cast<VideoChannel *>(args);
@@ -63,7 +98,6 @@ void VideoChannel::decodePacket() {
         } else if (ret < 0) {
             break;
         }
-
 
         AVFrame *frame = av_frame_alloc();
         ret = avcodec_receive_frame(codecContext, frame);
@@ -119,9 +153,46 @@ void VideoChannel::syn_frame_play() {
                   reinterpret_cast<const uint8_t *const *>(frame->data),
                   frame->linesize, 0, frame->height, dst_data, dst_linesize);
 
+        /************************ 音视频同步 *********************/
         LOGD("decode a frame size:%d", frame_queue.size());
-        av_usleep(16 * 1000); // 延迟16ms
+        // 视频每一帧播放时间,也就是现在距下一帧播放时间,但是并没有把解码时间算进去
+        double frame_delay = 1.0 / fps;
+        // 再加上解码耗时时间
+        double real_delay = frame_delay + frame->repeat_pict / (2 * fps);
+        // 拿到音频时钟，即音频帧当前显示时间，单位是time_base
+        double audio_frame_clock = audioChannel->syn_clock;
+        // 视频时钟，视频帧本来的显示时间
+        //double video_frame_clock = frame->pts * av_q2d(time_base);
+        double video_frame_clock = frame->best_effort_timestamp * av_q2d(time_base);
 
+        if (!audioChannel) {
+            // 没有音频流的情况
+            av_usleep(real_delay * 1000000);
+            if (callJavaHelper) {
+                callJavaHelper->onProgress(THREAD_CHILD, video_frame_clock);
+            }
+        } else {
+            // 视频时间线刻度 - 音频时间线刻度
+            double diff = video_frame_clock - audio_frame_clock;
+            LOGD("同步， 视频时间 - 音频时间 = 4%f", diff);
+
+            if (diff > 0) { // 视频超前
+                if (diff > 1) { // 相差比较大
+                    av_usleep(real_delay * 2 * 100000);
+                } else {
+                    av_usleep(real_delay + diff * 1000000); // 单位是微秒
+                }
+            } else if (diff < 0) { // 音频超前
+                if (fabs(diff) >= 0.05) {
+                    //releaseAVFrame(&frame); // 丢掉当前帧
+                    frame_queue.sync();
+                    continue;
+                }
+            } else {
+                LOGD("音视频同步，无需调整");
+            }
+        }
+        releaseAVFrame(&frame);
 
         /**
          * 回调出去,去native-lib里渲染
@@ -129,10 +200,13 @@ void VideoChannel::syn_frame_play() {
          * linesize
          * */
         renderCallback(dst_data[0], dst_linesize[0], codecContext->width, codecContext->height);
-        releaseAVFrame(&frame);
     }
     releaseAVFrame(&frame);
     isPlaying = 0;
     av_freep(&dst_data[0]);
     sws_freeContext(sws_ctx);
+}
+
+void VideoChannel::setFps(int fps) {
+    this->fps = fps;
 }

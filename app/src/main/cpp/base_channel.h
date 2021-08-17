@@ -16,11 +16,14 @@ extern "C" {
 
 class BaseChannel {
 public:
-    BaseChannel(int id, CallJavaHelper *callJavaHelper, AVCodecContext *codecContext)
-            : channelId(id),
-              callJavaHelper(callJavaHelper),
-              codecContext(codecContext) {
+    BaseChannel(int id, CallJavaHelper *callJavaHelper, AVCodecContext *codecContext,
+                AVRational time_base) : channelId(id),
+                                        callJavaHelper(callJavaHelper),
+                                        codecContext(codecContext),
+                                        time_base(time_base) {
 
+        pkt_queue.setReleaseCallback(releaseAVPacket);
+        frame_queue.setReleaseCallback(releaseAVFrame);
     }
 
     SafeQueue<AVPacket *> pkt_queue; // packet队列
@@ -29,6 +32,8 @@ public:
     volatile bool isPlaying = 0;
     AVCodecContext *codecContext;
     CallJavaHelper *callJavaHelper;
+    AVRational time_base; // 时间基，一种由分子分母表示的刻度单位
+    double syn_clock = 0; // 同步时钟，记录音频播放时间线，时间线是指相对时间
 
     virtual ~BaseChannel() {
         if (codecContext) {
