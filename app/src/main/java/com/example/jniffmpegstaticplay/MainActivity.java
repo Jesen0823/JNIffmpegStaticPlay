@@ -74,13 +74,14 @@ public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBar
         jniffPlayer.setOnProgressListener(new JNIffPlayer.OnProgressListener() {
             @Override
             public void onProgress(int progress) {
-                OLog.d("MainActivity, onProgress:"+ progress);
+                OLog.d("MainActivity,from JNI, onProgress:" + progress);
             }
         });
 
         jniffPlayer.setOnPrepareListener(new JNIffPlayer.OnPrepareListener() {
             @Override
             public void onPrepare() {
+                OLog.d("MainActivity,from JNI, prepare finish, now start");
                 jniffPlayer.start();
             }
         });
@@ -88,7 +89,7 @@ public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBar
         jniffPlayer.setOnErrorListener(new JNIffPlayer.OnErrorListener() {
             @Override
             public void onError(int errorCode) {
-
+                OLog.d("MainActivity,from JNI, Error:" + errorCode);
             }
         });
     }

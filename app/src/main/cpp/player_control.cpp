@@ -108,7 +108,7 @@ void PlayerControl::prepareControl() {
             videoChannel = new VideoChannel(index,callJavaHelper, codecContext);
             videoChannel->setRenderFrameCallback(frameCallback);
         } else if (codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
-            //audioChannel = new AudioChannel(index, callJavaHelper,codecContext);
+            audioChannel = new AudioChannel(index, callJavaHelper, codecContext);
         }
     }
 
