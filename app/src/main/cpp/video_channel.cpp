@@ -73,8 +73,7 @@ void *syn_play(void *args) {
 }
 
 void VideoChannel::play() {
-    pkt_queue.setWork(1);
-    frame_queue.setWork(1);
+    startWork();
     isPlaying = true;
 
     pthread_create(&pid_video_decode, NULL, decode, this);
@@ -93,8 +92,7 @@ void VideoChannel::resume() {
 void VideoChannel::stop() {
     isPlaying = 0;
     callJavaHelper = 0;
-    pkt_queue.setWork(0);
-    frame_queue.setWork(0);
+    stopWork();
     pthread_join(pid_video_decode, 0);
     pthread_join(pid_video_play, 0);
 }

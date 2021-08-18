@@ -43,8 +43,7 @@ public:
             avcodec_free_context(&codecContext);
             codecContext = 0;
         }
-        pkt_queue.clear();
-        frame_queue.clear();
+        clearQueue();
         LOGE("free channel: packet queue size %d, frame queue size %d", pkt_queue.size(),
              frame_queue.size());
     }
@@ -70,6 +69,21 @@ public:
             av_frame_free(frame);
             *frame = 0;
         }
+    }
+
+    void startWork() {
+        pkt_queue.setWork(1);
+        frame_queue.setWork(1);
+    }
+
+    void stopWork() {
+        pkt_queue.setWork(0);
+        frame_queue.setWork(0);
+    }
+
+    void clearQueue() {
+        pkt_queue.clear();
+        frame_queue.clear();
     }
 };
 

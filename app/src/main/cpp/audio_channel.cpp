@@ -51,8 +51,7 @@ void AudioChannel::play() {
     int ret = swr_init(swrContext);*/
 
     isPlaying = true;
-    pkt_queue.setWork(1);
-    frame_queue.setWork(1);
+    startWork();
     // 创建初始化OPENSL_ES 的线程
     pthread_create(&pid_init_opensl_play, 0, task_init_opensl, this);
     pthread_create(&pid_audio_decode, 0, task_audio_decode, this);
@@ -300,8 +299,7 @@ void AudioChannel::resume() {
 void AudioChannel::stop() {
     isPlaying = 0;
     callJavaHelper = 0;
-    pkt_queue.setWork(0);
-    frame_queue.setWork(0);
+    stopWork();
     pthread_join(pid_audio_decode, 0);
     pthread_join(pid_init_opensl_play, 0);
     if (swrContext) {

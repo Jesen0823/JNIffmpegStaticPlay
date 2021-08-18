@@ -260,22 +260,16 @@ void PlayerControl::seekTo(int point) {
         return;
     }
     if (audioChannel) {
-        audioChannel->pkt_queue.setWork(0);
-        audioChannel->frame_queue.setWork(0);
-        audioChannel->pkt_queue.clear();
-        audioChannel->frame_queue.clear();
+        audioChannel->stopWork();
+        audioChannel->clearQueue();
         //清除数据后，让队列重新工作
-        audioChannel->pkt_queue.setWork(1);
-        audioChannel->frame_queue.setWork(1);
+        audioChannel->startWork();
     }
     if (videoChannel) {
-        videoChannel->pkt_queue.setWork(0);
-        videoChannel->frame_queue.setWork(0);
-        videoChannel->pkt_queue.clear();
-        videoChannel->frame_queue.clear();
+        videoChannel->stopWork();
+        videoChannel->clearQueue();
         //清除数据后，让队列重新工作
-        videoChannel->pkt_queue.setWork(1);
-        videoChannel->frame_queue.setWork(1);
+        videoChannel->startWork();
     }
     pthread_mutex_unlock(&seekMutex);
 }

@@ -57,7 +57,7 @@ private:
     CallJavaHelper *callJavaHelper;
     RenderFrameCallback frameCallback;
     int duration = 0;
-    // 条件变量,利用线程间共享的全局变量进行同步的一种机制, 参考：https://blog.csdn.net/lyx_323/article/details/82897192
+    // 锁,利用线程间共享的全局变量进行同步的一种机制, 参考：https://blog.csdn.net/lyx_323/article/details/82897192
     pthread_mutex_t seekMutex;
 };
 
