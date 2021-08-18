@@ -49,10 +49,14 @@ VideoChannel::VideoChannel(int id, CallJavaHelper *callJavaHelper, AVCodecContex
     // 设置音视频同步时的丢帧策略：丢Packet还是Frame?
     frame_queue.setReleaseCallback(releaseAVFrame);
     frame_queue.setSyncHandle(dropFrame);
+
+    pthread_mutex_init(&v_mutex, NULL);
+    pthread_cond_init(&v_cond, NULL);
 }
 
 VideoChannel::~VideoChannel() {
-
+    pthread_cond_destroy(&v_cond);
+    pthread_mutex_destroy(&v_mutex);
 }
 
 
@@ -75,6 +79,15 @@ void VideoChannel::play() {
 
     pthread_create(&pid_video_decode, NULL, decode, this);
     pthread_create(&pid_video_play, NULL, syn_play, this);
+}
+
+void VideoChannel::pause() {
+    isPause = 1;
+}
+
+void VideoChannel::resume() {
+    isPause = 0;
+    pthread_cond_signal(&v_cond);
 }
 
 void VideoChannel::stop() {
@@ -125,6 +138,7 @@ void VideoChannel::setRenderFrameCallback(RenderFrameCallback callback) {
 // 播放
 void VideoChannel::syn_frame_play() {
 
+    pthread_mutex_lock(&v_mutex);
     //要对原始数据进行格式转换：yuv > rgba
     SwsContext *sws_ctx = sws_getContext(codecContext->width, codecContext->height,
                                          codecContext->pix_fmt, codecContext->width,
@@ -139,6 +153,11 @@ void VideoChannel::syn_frame_play() {
 
     AVFrame *frame = 0;
     while (isPlaying) {
+
+        if (isPause) {
+            pthread_cond_wait(&v_cond, &v_mutex);
+        }
+
         int ret = frame_queue.pop(frame);
         if (!isPlaying) {
             //如果停止播放了，跳出循环 释放packet
@@ -207,6 +226,7 @@ void VideoChannel::syn_frame_play() {
          * */
         renderCallback(dst_data[0], dst_linesize[0], codecContext->width, codecContext->height);
     }
+    pthread_mutex_unlock(&v_mutex);
     releaseAVFrame(&frame);
     isPlaying = 0;
     av_freep(&dst_data[0]);
@@ -216,3 +236,4 @@ void VideoChannel::syn_frame_play() {
 void VideoChannel::setFps(int fps) {
     this->fps = fps;
 }
+

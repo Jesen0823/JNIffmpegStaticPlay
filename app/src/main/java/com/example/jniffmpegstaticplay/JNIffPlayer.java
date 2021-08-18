@@ -87,6 +87,16 @@ public class JNIffPlayer implements SurfaceHolder.Callback {
         native_seek(seekPoint);
     }
 
+    // 暂停
+    public void pause() {
+        native_pause();
+    }
+
+    // 恢复暂停
+    public void resume() {
+        native_resume();
+    }
+
     // 停止播放
     public void stop() {
         OLog.d(TAG + ", stop");
@@ -169,9 +179,13 @@ public class JNIffPlayer implements SurfaceHolder.Callback {
 
     private native void native_seek(int seekPoint);
 
-    private native void native_release();
+    private native void native_pause();
+
+    private native void native_resume();
 
     private native void native_stop();
+
+    private native void native_release();
 
     public interface OnPrepareListener {
         void onPrepared();

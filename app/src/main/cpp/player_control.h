@@ -36,6 +36,10 @@ public:
 
     void seekTo(int point);
 
+    void pause();
+
+    void resume();
+
     void stop();
 
 

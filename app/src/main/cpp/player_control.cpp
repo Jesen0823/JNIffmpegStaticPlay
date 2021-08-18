@@ -280,6 +280,24 @@ void PlayerControl::seekTo(int point) {
     pthread_mutex_unlock(&seekMutex);
 }
 
+void PlayerControl::pause() {
+    if (audioChannel) {
+        audioChannel->pause();
+    }
+    if (videoChannel) {
+        videoChannel->pause();
+    }
+}
+
+void PlayerControl::resume() {
+    if (audioChannel) {
+        audioChannel->resume();
+    }
+    if (videoChannel) {
+        videoChannel->resume();
+    }
+}
+
 void PlayerControl::stop() {
     callJavaHelper = 0;
     pthread_create(&pid_stop, 0, task_stop_play, this);

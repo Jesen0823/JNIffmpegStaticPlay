@@ -26,6 +26,9 @@ AudioChannel::AudioChannel(int id, CallJavaHelper *callJavaHelper,
     if (ret != 0) {
         LOGE("swrContext init failed.");
     }
+
+    pthread_mutex_init(&a_mutex, NULL);
+    pthread_cond_init(&a_cond, NULL);
 }
 
 void *task_init_opensl(void *args) {
@@ -225,7 +228,12 @@ int AudioChannel::getPCM() {
     int pcm_data_size = 0;
     AVFrame *frame = 0;
 
+    pthread_mutex_lock(&a_mutex);
     while (isPlaying) {
+        if (isPause) {
+            pthread_cond_wait(&a_cond, &a_mutex);
+        }
+
         int ret = frame_queue.pop(frame);
         if (!isPlaying) {
             //如果停止播放了，跳出循环 释放packet
@@ -271,8 +279,19 @@ int AudioChannel::getPCM() {
         }
         break;
     }//end while
+    pthread_mutex_unlock(&a_mutex);
     releaseAVFrame(&frame);
     return pcm_data_size;
+}
+
+void AudioChannel::pause() {
+    isPause = 1;
+    pthread_cond_signal(&a_cond);
+}
+
+void AudioChannel::resume() {
+    isPause = 0;
+    pthread_cond_signal(&a_cond);
 }
 
 /**
@@ -321,4 +340,8 @@ AudioChannel::~AudioChannel() {
         swrContext = 0;
     }
     DELETE(out_pcm_buffers);
+
+    pthread_cond_destroy(&a_cond);
+    pthread_mutex_destroy(&a_mutex);
 }
+

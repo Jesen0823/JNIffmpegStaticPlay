@@ -32,6 +32,10 @@ public:
 
     virtual void play();
 
+    virtual void pause();
+
+    virtual void resume();
+
     virtual void stop();
 
     void decodePacket();
@@ -47,6 +51,9 @@ public:
 private:
     pthread_t pid_video_decode;
     pthread_t pid_video_play;
+    pthread_cond_t v_cond;
+    pthread_mutex_t v_mutex;
+
     RenderFrameCallback renderCallback;
     int fps; // 视频帧率
 };

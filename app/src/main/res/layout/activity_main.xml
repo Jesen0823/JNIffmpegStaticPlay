@@ -44,4 +44,21 @@
         android:layout_marginTop="10dp"
         android:gravity="center"
         android:text="网络视频流" />
+
+    <Button
+        android:id="@+id/pauseBtn"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:layout_marginTop="10dp"
+        android:gravity="center"
+        android:text="暂停" />
+
+    <Button
+        android:id="@+id/resumeBtn"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:layout_marginTop="10dp"
+        android:gravity="center"
+        android:text="恢复暂停" />
+
 </LinearLayout>

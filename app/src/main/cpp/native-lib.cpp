@@ -141,6 +141,22 @@ Java_com_example_jniffmpegstaticplay_JNIffPlayer_native_1seek(JNIEnv *env, jobje
     }
 }
 
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_example_jniffmpegstaticplay_JNIffPlayer_native_1pause(JNIEnv *env, jobject thiz) {
+    if (playerControl) {
+        playerControl->pause();
+    }
+}
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_example_jniffmpegstaticplay_JNIffPlayer_native_1resume(JNIEnv *env, jobject thiz) {
+    if (playerControl) {
+        playerControl->resume();
+    }
+}
+
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_example_jniffmpegstaticplay_JNIffPlayer_native_1stop(JNIEnv *env, jobject thiz) {

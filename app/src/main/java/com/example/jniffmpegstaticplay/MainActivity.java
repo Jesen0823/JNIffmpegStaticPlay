@@ -70,6 +70,13 @@ public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBar
             jniffPlayer.setDataSource(httpUrl);
             jniffPlayer.prepare();
         });
+        binding.pauseBtn.setOnClickListener(view -> {
+            jniffPlayer.pause();
+        });
+        binding.resumeBtn.setOnClickListener(view -> {
+            jniffPlayer.resume();
+        });
+
 
         AudioManager myAudioMgr = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
         String nativeSampleRate = myAudioMgr.getProperty(AudioManager.PROPERTY_OUTPUT_SAMPLE_RATE);

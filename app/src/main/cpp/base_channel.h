@@ -30,6 +30,8 @@ public:
     SafeQueue<AVFrame *> frame_queue; // Frame队列
     volatile int channelId;
     volatile bool isPlaying = 0;
+    volatile bool isPause = 0;
+
     AVCodecContext *codecContext;
     CallJavaHelper *callJavaHelper;
     AVRational time_base; // 时间基，一种由分子分母表示的刻度单位
@@ -49,6 +51,10 @@ public:
 
     // 虚方法，类似java的abstract
     virtual void play() = 0;
+
+    virtual void pause() = 0;
+
+    virtual void resume() = 0;
 
     virtual void stop() = 0;
 

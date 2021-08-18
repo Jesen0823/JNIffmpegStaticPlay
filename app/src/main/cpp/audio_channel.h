@@ -23,6 +23,10 @@ public:
 
     virtual void play();
 
+    virtual void pause();
+
+    virtual void resume();
+
     virtual void stop();
 
     void initOpenSL();
@@ -50,6 +54,8 @@ private:
 
     pthread_t pid_init_opensl_play;
     pthread_t pid_audio_decode;
+    pthread_cond_t a_cond;
+    pthread_mutex_t a_mutex;
 
     SwrContext *swrContext = 0;
     int out_channels;   // 声道数
