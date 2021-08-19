@@ -19,8 +19,6 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -L${my_lib_path}")
 
 #message("setPath: -L$-L${CMAKE_SOURCE_DIR}/libs/${ANDROID_ABI}")
 #message("setPath2: ${CMAKE_SOURCE_DIR}/libs/${ANDROID_ABI}")
-#message("setPath2.1: ${CMAKE_SOURCE_DIR}/libs/${CMAKE_ANDROID_ARCH_ABI}")
-#message("setPath3: ${CMAKE_SOURCE_DIR}/")
 
 target_link_libraries( # Specifies the target library.
         jniffmpegstaticplay
